@@ -12,12 +12,39 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details. You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #pragma once
 
+#include <stdatomic.h>
 #include <stdint.h>
+
+/**
+ *      Sephamores.
+ */
+
+typedef atomic_flag MUTEX;
+
+/**
+ * @brief Aquires a sephamore.
+ * @param Lock Targetted sephamore.
+ */
+inline static void Sephamore_Aquire(MUTEX* Lock) {
+        while (atomic_flag_test_and_set_explicit(Lock, memory_order_acquire)) {}
+}
+
+/**
+ * @brief Releases a sephamore.
+ * @param Lock Targetted sephamore.
+ */
+inline static void Sephamore_Release(MUTEX* Lock) {
+        atomic_flag_clear_explicit(Lock, memory_order_release);
+}
+
+/**
+ *      Procedure status codes.
+ */
 
 /** @brief Attribute to mark unused variables. */
 #define __used __attribute__((unused))
@@ -186,3 +213,27 @@ extern void __exit __used panic(PANIC_INFORMATION);
         } while (0)
 
 const char* Get_Status_Description(STATUS In);
+
+/**
+ *      Standard library implementation.
+ *
+ */
+
+
+#ifndef CONFIG_PROVIDE_STANDARD
+
+#include <stdarg.h>
+
+void   memcpy(void* Destination, const void* restrict Source, size_t Size);
+void   memset(void* Destination, uint8_t Source, size_t Size);
+int    memcmp(const char* restrict First, const char* restrict Second, size_t Size);
+void   itoa(size_t Value, char* Buffer, uint8_t Base);
+size_t mbstowcs(wchar_t* Destination, const char* restrict Source);
+size_t wcstrlen(const wchar_t* restrict Source);
+size_t strlen(const char* restrict Source);
+int    wcstrcmp(const wchar_t* restrict First, const wchar_t* restrict Second);
+int    strcmp(const char* restrict First, const char* restrict Second);
+void   vsprintf(char* Destination, const char* restrict Format, va_list Args);
+void   sprintf(char* Destination, const char* restrict Format, ...);
+
+#endif

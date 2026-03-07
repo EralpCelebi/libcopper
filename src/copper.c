@@ -1,5 +1,5 @@
 /**
- * @file Copper.c
+ * @file copper.c
  * @author Eralp Çelebi (eralp.celebi.personal@gmail.com)
  * @brief
  * @version 0.1

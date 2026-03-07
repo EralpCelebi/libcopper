@@ -15,10 +15,8 @@
  * 
  */
 
+#define CONFIG_COPPER_PROVIDE_STANDARD
 #include <copper.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 
 /**
  * @brief Aborts execution with a detailed error message.
@@ -31,25 +29,32 @@
  *           - **Location**: File path where the failure occurred.
  *           - **Line**: Line number in the source file.
  *           - **Condition**: Boolean expression that failed validation.
- *           - **Reason**: Underlying error code (e.g., `EINVAL`).
+ *           - **Status**: Underlying error code (e.g., `EINVAL`).
  *           - **Excuse**: Optional additional context for debugging.
  *
  * @note This function is marked `__exit`, indicating it should not be called directly
  *       but invoked by Copper's internal assertion mechanism (`REQUIRE`/`ASSERT`).
  */
-void __used __exit panic(PANIC_INFORMATION In) {
-        printf(
-          "%18s:%03d | Expected '%s' to be true. Failed with excuse: %s (%s)\n",
-          In.File,
-          In.Line,
-          In.Condition,
-          Get_Status_Description(In.Status),
-          In.Excuse);
-
-        exit(In.Status);
+void __used __exit panic(PANIC_INFORMATION __attribute__((unused)) Information) {
+        // printf(
+        //   "%18s:%03d | Expected '%s' to be true. Failed with excuse: %s (%s)\n",
+        //   Information.File,
+        //   Information.Line,
+        //   Information.Condition,
+        //   Get_Status_Description(Information.Status),
+        //   Information.Excuse);
+        for (;;) {}
 }
 
 int main(void) {
+        MUTEX Lock;
+        Sephamore_Aquire(&Lock);
+
+        REQUIRE(Lock._Value == 0, EDEADLOCK);
+
+        Sephamore_Release(&Lock);
+
         REQUIRE(1 == 0, EACCES);
+
         return 0;
 }
