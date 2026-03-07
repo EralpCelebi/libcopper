@@ -1,5 +1,5 @@
 /**
- * @file copper.h
+ * @file copper.h.in
  * @author Eralp Çelebi <eralp.celebi.personal@gmail.com>
  * @brief A standalone library for system internals.
  * @date 06-03-2026
@@ -19,6 +19,8 @@
 
 #include <stdatomic.h>
 #include <stdint.h>
+
+#cmakedefine CONFIG_PROVIDE_STANDARD "@CONFIG_PROVIDE_STANDARD@"
 
 /**
  *      Sephamores.
@@ -220,7 +222,7 @@ const char* Get_Status_Description(STATUS In);
  */
 
 
-#ifndef CONFIG_PROVIDE_STANDARD
+#ifdef CONFIG_PROVIDE_STANDARD
 
 #include <stdarg.h>
 

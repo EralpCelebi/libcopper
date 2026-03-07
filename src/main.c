@@ -1,7 +1,7 @@
 /**
  * @file main.c
  * @author Eralp Çelebi <eralp.celebi.personal@gmail.com>
- * @brief A reference entry for libcopper.
+ * @brief A reference entry point for libcopper.
  * @date 06-03-2026
  * @copyright Copyright (c) 2026 Eralp Çelebi
  * This program is free software; you can redistribute it and/or modify it under
@@ -15,8 +15,12 @@
  * 
  */
 
-#define CONFIG_COPPER_PROVIDE_STANDARD
 #include <copper.h>
+
+#ifndef CONFIG_PROVIDE_STANDARD
+#include <stdio.h>
+#include <stdlib.h>
+#endif
 
 /**
  * @brief Aborts execution with a detailed error message.
@@ -36,13 +40,17 @@
  *       but invoked by Copper's internal assertion mechanism (`REQUIRE`/`ASSERT`).
  */
 void __used __exit panic(PANIC_INFORMATION __attribute__((unused)) Information) {
-        // printf(
-        //   "%18s:%03d | Expected '%s' to be true. Failed with excuse: %s (%s)\n",
-        //   Information.File,
-        //   Information.Line,
-        //   Information.Condition,
-        //   Get_Status_Description(Information.Status),
-        //   Information.Excuse);
+#ifndef CONFIG_PROVIDE_STANDARD
+        printf(
+          "%18s:%03d | Expected '%s' to be true. Failed with excuse: %s (%s)\n",
+          Information.File,
+          Information.Line,
+          Information.Condition,
+          Get_Status_Description(Information.Status),
+          Information.Excuse);
+
+        exit(Information.Status);
+#endif
         for (;;) {}
 }
 

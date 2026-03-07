@@ -1,5 +1,5 @@
 /**
- * @file standard.c
+ * @file slibc.c
  * @author Eralp Çelebi <eralp.celebi.personal@gmail.com>
  * @brief Base implementation for the C standard library.
  * @date 07-03-2026
@@ -21,6 +21,32 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+/**
+ * @brief Returns the size of a wide-string.
+ *
+ * @param String The wide-string to be used.
+ * @return `size_t` The number of `wchar_t`'s in the string.
+ */
+size_t wcstrlen(const wchar_t* restrict Source) {
+    size_t Index = 0;
+
+    for (; Source[Index] != L'\0'; Index++) {}
+    return Index;
+}
+
+/**
+ * @brief Returns the size of a string.
+ *
+ * @param [in] String The input string.
+ * @return `size_t` The number of characters in the string.
+ */
+size_t strlen(const char* restrict Source) {
+    size_t Index = 0;
+
+    for (; Source[Index] != '\0'; Index++) {}
+    return Index;
+}
 
 /**
  * @brief Copies a chunk of memory from one buffer to the other.
@@ -118,32 +144,6 @@ size_t mbstowcs(wchar_t* Destination, const char* restrict Source) {
 
     Destination[Index] = '\0';
 
-    return Index;
-}
-
-/**
- * @brief Returns the size of a wide-string.
- *
- * @param String The wide-string to be used.
- * @return `size_t` The number of `wchar_t`'s in the string.
- */
-size_t wcstrlen(const wchar_t* restrict Source) {
-    size_t Index = 0;
-
-    for (; Source[Index] != L'\0'; Index++) {}
-    return Index;
-}
-
-/**
- * @brief Returns the size of a string.
- *
- * @param [in] String The input string.
- * @return `size_t` The number of characters in the string.
- */
-size_t strlen(const char* restrict Source) {
-    size_t Index = 0;
-
-    for (; Source[Index] != '\0'; Index++) {}
     return Index;
 }
 
