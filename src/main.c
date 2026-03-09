@@ -47,7 +47,7 @@ void __used __exit panic(PANIC_INFORMATION __attribute__((unused)) Information) 
           Information.Line,
           Information.Condition,
           Get_Status_Description(Information.Status),
-          Information.Excuse);
+          Information.Statement);
 
         exit(Information.Status);
 #endif
