@@ -228,11 +228,15 @@ const char* Get_Status_Description(STATUS In);
  *  @brief Represents the state of the global arena allocator. Can be used for
  *  global allocations, supports `free`.
  */
+
+typedef void* (*GLOBAL_ALLOCATOR_ALLOCATE)(void*, uintptr_t);
+typedef void (*GLOBAL_ALLOCATOR_FREE)(void*, void*);
+
 struct GLOBAL_ALLOCATOR {
-        MUTEX Lock;
-        void* Internal_Data;
-        void* (*alloc)(void*, size_t);
-        void (*free)(void*, void* Region);
+        MUTEX                     Lock;
+        void*                     Internal_Data;
+        GLOBAL_ALLOCATOR_ALLOCATE alloc;
+        GLOBAL_ALLOCATOR_FREE     free;
 };
 typedef struct GLOBAL_ALLOCATOR GLOBAL_ALLOCATOR;
 
@@ -241,11 +245,12 @@ typedef struct GLOBAL_ALLOCATOR GLOBAL_ALLOCATOR;
  *  Can be used for function local, disposable allocation.
  */
 struct LOCAL_ALLOCATOR {
-        MUTEX Lock;
-        void* Tail;       //!< @brief Represents the tail pointer of the local
-                          // allocator. It's incremented with every allocation.
-        void* Barrier;    //!< @brief Represents the end of the local allocation
-                          // region.
+        MUTEX     Lock;
+        void*     Head;
+        uintptr_t Tail;       //!< @brief Represents the tail pointer of the local
+                              // allocator. It's incremented with every allocation.
+        uintptr_t Barrier;    //!< @brief Represents the end of the local allocation
+                              // region.
 };
 typedef struct LOCAL_ALLOCATOR LOCAL_ALLOCATOR;
 
@@ -254,13 +259,10 @@ void  Global_Allocator_Dispose(void);
 void* Global_Allocator_Allocate(size_t);
 void  Global_Allocator_Free(void* In);
 
-void  Local_Allocator_Make(void);
-void  Local_Allocator_Dispose(LOCAL_ALLOCATOR*);
-void* Local_Allocator_Allocate(LOCAL_ALLOCATOR*, size_t);
-void  Local_Allocator_Free(LOCAL_ALLOCATOR*, void* In);
-
-// // @brief Holds a pointer to the current global allocator.
-// extern GLOBAL_ALLOCATOR* gAllocator;
+LOCAL_ALLOCATOR Local_Allocator_Make(void);
+void            Local_Allocator_Dispose(LOCAL_ALLOCATOR*);
+void*           Local_Allocator_Allocate(LOCAL_ALLOCATOR*, uintptr_t);
+// void            Local_Allocator_Free(LOCAL_ALLOCATOR*, void* In);
 
 #endif
 

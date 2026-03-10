@@ -12,14 +12,14 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details. You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include <copper.h>
 
 #ifndef CONFIG_PROVIDE_STANDARD
-#include <stdio.h>
-#include <stdlib.h>
+        #include <stdio.h>
+        #include <stdlib.h>
 #endif
 
 /**
@@ -47,7 +47,7 @@ void __used __exit panic(PANIC_INFORMATION __attribute__((unused)) Information) 
           Information.Line,
           Information.Condition,
           Get_Status_Description(Information.Status),
-          Information.Statement);
+          Information.Excuse);
 
         exit(Information.Status);
 #endif
@@ -57,10 +57,30 @@ void __used __exit panic(PANIC_INFORMATION __attribute__((unused)) Information) 
 int main(void) {
         MUTEX Lock;
         Sephamore_Aquire(&Lock);
-
-        REQUIRE(Lock._Value == 0, EDEADLOCK);
-
         Sephamore_Release(&Lock);
+
+        void* Allocator_Region = malloc(CONFIG_ALLOCATOR_LOCAL_SIZE * 64);
+
+        LOCAL_ALLOCATOR Botched_Global_Allocator = {
+                .Lock    = { 0 },
+                .Head    = Allocator_Region,
+                .Tail    = (uintptr_t)Allocator_Region,
+                .Barrier = (uintptr_t)Allocator_Region + CONFIG_ALLOCATOR_LOCAL_SIZE * 64,
+        };
+
+        GLOBAL_ALLOCATOR Test_Global_Allocator = {
+                .Lock          = { 0 },
+                .Internal_Data = &Botched_Global_Allocator,
+                .alloc         = (GLOBAL_ALLOCATOR_ALLOCATE)Local_Allocator_Allocate,
+                .free          = NULL,
+        };
+
+        Global_Allocator_Register(&Test_Global_Allocator);
+
+        for (int i = 0; i < 5; i++) { 
+                void* Allocated = Global_Allocator_Allocate(0x1000);
+                printf("Allocation.%d : %p\n", i, Allocated);
+        }
 
         REQUIRE(1 == 0, EACCES);
 

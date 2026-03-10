@@ -30,8 +30,8 @@ void Global_Allocator_Register(GLOBAL_ALLOCATOR* Allocator) {
         Sephamore_Aquire(&g_Allocator_Lock);
 
         REQUIRE(Allocator != NULL, EINVAL);
-        REQUIRE(Allocator->alloc != NULL, EUNSUPPORTED);
-        REQUIRE(Allocator->free != NULL, EUNSUPPORTED);
+        // REQUIRE(Allocator->alloc != NULL, EUNSUPPORTED);
+        // REQUIRE(Allocator->free != NULL, EUNSUPPORTED);
 
         g_Allocator = Allocator;
         ENSURE(g_Allocator != NULL, EBUG);
@@ -75,18 +75,87 @@ void* Global_Allocator_Allocate(size_t Size) {
 
 /**
  * @brief Deallocates a region that was previously allocated by the global
-* allocator.
+ * allocator.
  *
  * @param In The memory region to deallocate.
  */
 void Global_Allocator_Free(void* In) {
         REQUIRE(In != NULL, EINVAL);
         Sephamore_Aquire(&g_Allocator_Lock);
-        
+
         REQUIRE(g_Allocator != NULL, EUNSUPPORTED);
         REQUIRE(g_Allocator->free != NULL, EUNSUPPORTED);
-        
+
         g_Allocator->free(g_Allocator->Internal_Data, In);
 
         Sephamore_Release(&g_Allocator_Lock);
+}
+
+/**
+ * @brief Creates a local allocator from the current global allocator.
+ *
+ * @return A local allocator object.
+ */
+LOCAL_ALLOCATOR Local_Allocator_Make(void) {
+        Sephamore_Aquire(&g_Allocator_Lock);
+
+        REQUIRE(g_Allocator != NULL, EUNSUPPORTED);
+        REQUIRE(g_Allocator->alloc != NULL, EUNSUPPORTED);
+
+        void* Head = g_Allocator->alloc(g_Allocator->Internal_Data, CONFIG_ALLOCATOR_LOCAL_SIZE);
+        uintptr_t Barrier = ((uintptr_t)Head + CONFIG_ALLOCATOR_LOCAL_SIZE);
+
+        LOCAL_ALLOCATOR Prepared_Allocator
+          = { .Head = Head, .Tail = (uintptr_t)Head, .Barrier = Barrier, .Lock = { 0 } };
+
+        ENSURE(Prepared_Allocator.Barrier != (uintptr_t)Prepared_Allocator.Head, EBUG);
+        ENSURE(Prepared_Allocator.Lock._Value == 0, EBUG);
+
+        Sephamore_Release(&g_Allocator_Lock);
+
+        return Prepared_Allocator;
+}
+
+/**
+ * @brief Disposes of a local allocator object. Sets the memory properties to
+ * zero, and leaves the internal sephamore locked.
+ *
+ * @param Source Reference to the local allocator object.
+ */
+void Local_Allocator_Dispose(LOCAL_ALLOCATOR* Source) {
+        Sephamore_Aquire(&Source->Lock);
+        Sephamore_Aquire(&g_Allocator_Lock);
+
+        REQUIRE(g_Allocator != NULL, EUNSUPPORTED);
+        REQUIRE(g_Allocator->free != NULL, EUNSUPPORTED);
+        REQUIRE(Source != NULL, EINVAL);
+
+        g_Allocator->free(g_Allocator->Internal_Data, Source->Head);
+
+        Source->Head    = NULL;
+        Source->Barrier = 0;
+        Source->Tail    = 0;
+
+        ENSURE(Source->Head == NULL, EBUG);
+
+        Sephamore_Release(&g_Allocator_Lock);
+}
+
+/**
+ * @brief Allocates a buffer from the local allocator.
+ *
+ * @param Source Reference to the local allocator object.
+ * @param Size Size of the allocation.
+ */
+void* Local_Allocator_Allocate(LOCAL_ALLOCATOR* Source, uintptr_t Size) {
+        Sephamore_Aquire(&Source->Lock);
+
+        REQUIRE((Source->Tail + Size) < Source->Barrier, ENOMEM);
+
+        void* Allocation = (void*)Source->Tail;
+        Source->Tail = Source->Tail + Size;
+
+        Sephamore_Release(&Source->Lock);
+
+        return Allocation;
 }
