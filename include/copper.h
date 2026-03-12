@@ -217,6 +217,8 @@ extern void __exit __used panic(PANIC_INFORMATION);
 
 const char* Get_Status_Description(STATUS In);
 
+/* ======================================================================================= */
+
 /**
  *      Simple allocator implementation.
  *
@@ -262,9 +264,23 @@ void  Global_Allocator_Free(void* In);
 LOCAL_ALLOCATOR Local_Allocator_Make(void);
 void            Local_Allocator_Dispose(LOCAL_ALLOCATOR*);
 void*           Local_Allocator_Allocate(LOCAL_ALLOCATOR*, uintptr_t);
-// void            Local_Allocator_Free(LOCAL_ALLOCATOR*, void* In);
 
 #endif
+
+/* ======================================================================================= */
+
+/**
+ *      Journaling implementation.
+ *
+ */
+
+#if defined(CONFIG_PROVIDE_JOURNALING)
+
+
+
+#endif
+
+/* ======================================================================================= */
 
 /**
  *      Standard library implementation.

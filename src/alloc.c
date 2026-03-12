@@ -122,21 +122,21 @@ LOCAL_ALLOCATOR Local_Allocator_Make(void) {
  *
  * @param Source Reference to the local allocator object.
  */
-void Local_Allocator_Dispose(LOCAL_ALLOCATOR* Source) {
-        Sephamore_Aquire(&Source->Lock);
+void Local_Allocator_Dispose(LOCAL_ALLOCATOR* Local_Allocator) {
+        Sephamore_Aquire(&Local_Allocator->Lock);
         Sephamore_Aquire(&g_Allocator_Lock);
 
         REQUIRE(g_Allocator != NULL, EUNSUPPORTED);
         REQUIRE(g_Allocator->free != NULL, EUNSUPPORTED);
-        REQUIRE(Source != NULL, EINVAL);
+        REQUIRE(Local_Allocator != NULL, EINVAL);
 
-        g_Allocator->free(g_Allocator->Internal_Data, Source->Head);
+        g_Allocator->free(g_Allocator->Internal_Data, Local_Allocator->Head);
 
-        Source->Head    = NULL;
-        Source->Barrier = 0;
-        Source->Tail    = 0;
+        Local_Allocator->Head    = NULL;
+        Local_Allocator->Barrier = 0;
+        Local_Allocator->Tail    = 0;
 
-        ENSURE(Source->Head == NULL, EBUG);
+        ENSURE(Local_Allocator->Head == NULL, EBUG);
 
         Sephamore_Release(&g_Allocator_Lock);
 }
@@ -147,15 +147,15 @@ void Local_Allocator_Dispose(LOCAL_ALLOCATOR* Source) {
  * @param Source Reference to the local allocator object.
  * @param Size Size of the allocation.
  */
-void* Local_Allocator_Allocate(LOCAL_ALLOCATOR* Source, uintptr_t Size) {
-        Sephamore_Aquire(&Source->Lock);
+void* Local_Allocator_Allocate(LOCAL_ALLOCATOR* Local_Allocator, uintptr_t Size) {
+        Sephamore_Aquire(&Local_Allocator->Lock);
 
-        REQUIRE((Source->Tail + Size) < Source->Barrier, ENOMEM);
+        REQUIRE((Local_Allocator->Tail + Size) < Local_Allocator->Barrier, ENOMEM);
 
-        void* Allocation = (void*)Source->Tail;
-        Source->Tail = Source->Tail + Size;
+        void* Allocation      = (void*)Local_Allocator->Tail;
+        Local_Allocator->Tail = Local_Allocator->Tail + Size;
 
-        Sephamore_Release(&Source->Lock);
+        Sephamore_Release(&Local_Allocator->Lock);
 
         return Allocation;
 }
