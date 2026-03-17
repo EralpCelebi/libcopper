@@ -59,19 +59,19 @@ int main(void) {
         Sephamore_Aquire(&Lock);
         Sephamore_Release(&Lock);
 
-        void* Allocator_Region = malloc(CONFIG_ALLOCATOR_LOCAL_SIZE * 64);
+        void* Allocator_Region = malloc(CONFIG_ALLOCATOR_ARENA_SIZE * 64);
 
-        LOCAL_ALLOCATOR Botched_Global_Allocator = {
+        ARENA_ALLOCATOR Botched_Global_Allocator = {
                 .Lock    = { 0 },
                 .Head    = Allocator_Region,
                 .Tail    = (uintptr_t)Allocator_Region,
-                .Barrier = (uintptr_t)Allocator_Region + CONFIG_ALLOCATOR_LOCAL_SIZE * 64,
+                .Barrier = (uintptr_t)Allocator_Region + CONFIG_ALLOCATOR_ARENA_SIZE * 64,
         };
 
         GLOBAL_ALLOCATOR Test_Global_Allocator = {
                 .Lock          = { 0 },
                 .Internal_Data = &Botched_Global_Allocator,
-                .alloc         = (GLOBAL_ALLOCATOR_ALLOCATE)Local_Allocator_Allocate,
+                .alloc         = (GLOBAL_ALLOCATOR_ALLOCATE)Arena_Allocator_Allocate,
                 .free          = NULL,
         };
 
@@ -81,6 +81,11 @@ int main(void) {
                 void* Allocated = Global_Allocator_Allocate(0x1000);
                 printf("Allocation.%d : %p\n", i, Allocated);
         }
+
+        Journal_Register(puts);
+        Journal_Register(puts);
+        Journal_Register(puts);
+        Journal_Dispatch("Hello");
 
         REQUIRE(1 == 0, EACCES);
 

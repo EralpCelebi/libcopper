@@ -96,16 +96,16 @@ void Global_Allocator_Free(void* In) {
  *
  * @return A local allocator object.
  */
-LOCAL_ALLOCATOR Local_Allocator_Make(void) {
+ARENA_ALLOCATOR Arena_Allocator_Make(void) {
         Sephamore_Aquire(&g_Allocator_Lock);
 
         REQUIRE(g_Allocator != NULL, EUNSUPPORTED);
         REQUIRE(g_Allocator->alloc != NULL, EUNSUPPORTED);
 
-        void* Head = g_Allocator->alloc(g_Allocator->Internal_Data, CONFIG_ALLOCATOR_LOCAL_SIZE);
-        uintptr_t Barrier = ((uintptr_t)Head + CONFIG_ALLOCATOR_LOCAL_SIZE);
+        void* Head = g_Allocator->alloc(g_Allocator->Internal_Data, CONFIG_ALLOCATOR_ARENA_SIZE);
+        uintptr_t Barrier = ((uintptr_t)Head + CONFIG_ALLOCATOR_ARENA_SIZE);
 
-        LOCAL_ALLOCATOR Prepared_Allocator
+        ARENA_ALLOCATOR Prepared_Allocator
           = { .Head = Head, .Tail = (uintptr_t)Head, .Barrier = Barrier, .Lock = { 0 } };
 
         ENSURE(Prepared_Allocator.Barrier != (uintptr_t)Prepared_Allocator.Head, EBUG);
@@ -122,21 +122,21 @@ LOCAL_ALLOCATOR Local_Allocator_Make(void) {
  *
  * @param Source Reference to the local allocator object.
  */
-void Local_Allocator_Dispose(LOCAL_ALLOCATOR* Local_Allocator) {
-        Sephamore_Aquire(&Local_Allocator->Lock);
+void Arena_Allocator_Dispose(ARENA_ALLOCATOR* Arena_Allocator) {
+        Sephamore_Aquire(&Arena_Allocator->Lock);
         Sephamore_Aquire(&g_Allocator_Lock);
 
         REQUIRE(g_Allocator != NULL, EUNSUPPORTED);
         REQUIRE(g_Allocator->free != NULL, EUNSUPPORTED);
-        REQUIRE(Local_Allocator != NULL, EINVAL);
+        REQUIRE(Arena_Allocator != NULL, EINVAL);
 
-        g_Allocator->free(g_Allocator->Internal_Data, Local_Allocator->Head);
+        g_Allocator->free(g_Allocator->Internal_Data, Arena_Allocator->Head);
 
-        Local_Allocator->Head    = NULL;
-        Local_Allocator->Barrier = 0;
-        Local_Allocator->Tail    = 0;
+        Arena_Allocator->Head    = NULL;
+        Arena_Allocator->Barrier = 0;
+        Arena_Allocator->Tail    = 0;
 
-        ENSURE(Local_Allocator->Head == NULL, EBUG);
+        ENSURE(Arena_Allocator->Head == NULL, EBUG);
 
         Sephamore_Release(&g_Allocator_Lock);
 }
@@ -147,15 +147,15 @@ void Local_Allocator_Dispose(LOCAL_ALLOCATOR* Local_Allocator) {
  * @param Source Reference to the local allocator object.
  * @param Size Size of the allocation.
  */
-void* Local_Allocator_Allocate(LOCAL_ALLOCATOR* Local_Allocator, uintptr_t Size) {
-        Sephamore_Aquire(&Local_Allocator->Lock);
+void* Arena_Allocator_Allocate(ARENA_ALLOCATOR* Arena_Allocator, uintptr_t Size) {
+        Sephamore_Aquire(&Arena_Allocator->Lock);
 
-        REQUIRE((Local_Allocator->Tail + Size) < Local_Allocator->Barrier, ENOMEM);
+        REQUIRE((Arena_Allocator->Tail + Size) < Arena_Allocator->Barrier, ENOMEM);
 
-        void* Allocation      = (void*)Local_Allocator->Tail;
-        Local_Allocator->Tail = Local_Allocator->Tail + Size;
+        void* Allocation      = (void*)Arena_Allocator->Tail;
+        Arena_Allocator->Tail = Arena_Allocator->Tail + Size;
 
-        Sephamore_Release(&Local_Allocator->Lock);
+        Sephamore_Release(&Arena_Allocator->Lock);
 
         return Allocation;
 }

@@ -13,6 +13,9 @@
  * details. You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  * 
+ *
+ * Please note that the functions defined here are stupid-unsafe. Make sure you
+ * do not let them act like they want to!
  */
 
 #include <copper.h>

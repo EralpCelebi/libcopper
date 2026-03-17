@@ -19,6 +19,7 @@
 
 #include "defconfig.h"
 
+#include <stdarg.h>
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -173,15 +174,15 @@ inline static void Sephamore_Release(MUTEX* Lock) {
         X(EUNREACHABLE, "Unreachable code executed")    \
         X(EPANIC, "Kernel panic")
 
-enum STATUS {
+enum STATUS_E {
 #define X(Name, Message) Name,
         STATUS_LIST(X)
 #undef X
           STATUS_MAX
 };
-typedef enum STATUS STATUS;
+typedef enum STATUS_E STATUS;
 
-struct PANIC_INFORMATION {
+struct PANIC_INFORMATION_S {
         uint16_t    Line;
         STATUS      Status;
         const char* File;
@@ -189,7 +190,7 @@ struct PANIC_INFORMATION {
         const char* Condition;
         const char* Excuse;
 };
-typedef struct PANIC_INFORMATION PANIC_INFORMATION;
+typedef struct PANIC_INFORMATION_S PANIC_INFORMATION;
 
 extern void __exit __used panic(PANIC_INFORMATION);
 
@@ -234,19 +235,19 @@ const char* Get_Status_Description(STATUS In);
 typedef void* (*GLOBAL_ALLOCATOR_ALLOCATE)(void*, uintptr_t);
 typedef void (*GLOBAL_ALLOCATOR_FREE)(void*, void*);
 
-struct GLOBAL_ALLOCATOR {
+struct GLOBAL_ALLOCATOR_S {
         MUTEX                     Lock;
         void*                     Internal_Data;
         GLOBAL_ALLOCATOR_ALLOCATE alloc;
         GLOBAL_ALLOCATOR_FREE     free;
 };
-typedef struct GLOBAL_ALLOCATOR GLOBAL_ALLOCATOR;
+typedef struct GLOBAL_ALLOCATOR_S GLOBAL_ALLOCATOR;
 
 /**
  *  @brief Represents the state of a local arena allocator.
  *  Can be used for function local, disposable allocation.
  */
-struct LOCAL_ALLOCATOR {
+struct ARENA_ALLOCATOR_S {
         MUTEX     Lock;
         void*     Head;
         uintptr_t Tail;       //!< @brief Represents the tail pointer of the local
@@ -254,16 +255,16 @@ struct LOCAL_ALLOCATOR {
         uintptr_t Barrier;    //!< @brief Represents the end of the local allocation
                               // region.
 };
-typedef struct LOCAL_ALLOCATOR LOCAL_ALLOCATOR;
+typedef struct ARENA_ALLOCATOR_S ARENA_ALLOCATOR;
 
 void  Global_Allocator_Register(GLOBAL_ALLOCATOR*);
 void  Global_Allocator_Dispose(void);
 void* Global_Allocator_Allocate(size_t);
 void  Global_Allocator_Free(void* In);
 
-LOCAL_ALLOCATOR Local_Allocator_Make(void);
-void            Local_Allocator_Dispose(LOCAL_ALLOCATOR*);
-void*           Local_Allocator_Allocate(LOCAL_ALLOCATOR*, uintptr_t);
+ARENA_ALLOCATOR Arena_Allocator_Make(void);
+void            Arena_Allocator_Dispose(ARENA_ALLOCATOR*);
+void*           Arena_Allocator_Allocate(ARENA_ALLOCATOR*, uintptr_t);
 
 #endif
 
@@ -274,9 +275,20 @@ void*           Local_Allocator_Allocate(LOCAL_ALLOCATOR*, uintptr_t);
  *
  */
 
-#if defined(CONFIG_PROVIDE_JOURNALING)
+#if defined(CONFIG_PROVIDE_JOURNAL)
 
+typedef int (*JOURNAL_PUTS)(const char* restrict Source);
 
+struct JOURNAL_S {
+        MUTEX        Lock;
+        JOURNAL_PUTS Callback[CONFIG_JOURNAL_MAX_CALLBACKS];
+};
+
+typedef struct JOURNAL_S JOURNAL;
+
+void Journal_Register(JOURNAL_PUTS);
+void Journal_Dispose(JOURNAL_PUTS);
+void Journal_Dispatch(const char* restrict);
 
 #endif
 
@@ -303,3 +315,12 @@ void   vsprintf(char* Destination, const char* restrict Format, va_list Args);
 void   sprintf(char* Destination, const char* restrict Format, ...);
 
 #endif
+
+#if defined(CONFIG_PROVIDE_STANDARD) && defined(CONFIG_PROVIDE_JOURNAL)
+
+void puts(const char*);
+void printf(const char* restrict Format, ...);
+void vprintf(const char* restrict Format, va_list Args);
+
+#endif
+
