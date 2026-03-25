@@ -227,14 +227,13 @@ const char* Get_Status_Description(STATUS In);
 
 #if defined(CONFIG_PROVIDE_ALLOCATOR)
 
+typedef void* (*GLOBAL_ALLOCATOR_ALLOCATE)(void*, uintptr_t);
+typedef void (*GLOBAL_ALLOCATOR_FREE)(void*, void*);
+
 /**
  *  @brief Represents the state of the global arena allocator. Can be used for
  *  global allocations, supports `free`.
  */
-
-typedef void* (*GLOBAL_ALLOCATOR_ALLOCATE)(void*, uintptr_t);
-typedef void (*GLOBAL_ALLOCATOR_FREE)(void*, void*);
-
 struct GLOBAL_ALLOCATOR_S {
         MUTEX                     Lock;
         void*                     Internal_Data;
@@ -277,8 +276,11 @@ void*           Arena_Allocator_Allocate(ARENA_ALLOCATOR*, uintptr_t);
 
 #if defined(CONFIG_PROVIDE_JOURNAL)
 
-typedef int (*JOURNAL_PUTS)(const char* restrict Source);
+typedef void (*JOURNAL_PUTS)(const char* restrict Source);
 
+/**
+ * @brief Represents the internal state of the journaling subsystem.
+ */
 struct JOURNAL_S {
         MUTEX        Lock;
         JOURNAL_PUTS Callback[CONFIG_JOURNAL_MAX_CALLBACKS];
@@ -323,4 +325,3 @@ void printf(const char* restrict Format, ...);
 void vprintf(const char* restrict Format, va_list Args);
 
 #endif
-

@@ -16,7 +16,7 @@ if(CONFIG_PROVIDE_ALLOCATOR)
 endif()
 
 if(CONFIG_PROVIDE_STANDARD)
-        target_sources(copper PRIVATE src/slibc.c)
+        target_sources(copper PRIVATE src/standard.c)
 endif()
 
 if(CONFIG_PROVIDE_JOURNAL)

@@ -380,3 +380,48 @@ void sprintf(char* Destination, const char* restrict Format, ...) {
 
     va_end(Args);
 }
+
+#if defined (CONFIG_PROVIDE_JOURNAL)
+
+/**
+ * @brief Prints the provided string using the journaling dispatch callbacks.
+ *
+ * @param Source A reference to the string.
+ */
+void puts(const char* restrict Source) {
+        REQUIRE(Source != NULL, EINVAL);
+        Journal_Dispatch(Source);
+}
+
+/**
+ * @brief Prints a formatted string using the journaling dispatch callbacks.
+ *
+ * @param Format Formatting string to be used as a template.
+ * @param Arguments Variadic arguments list provided for the formatting.
+ */
+void vprintf(const char *restrict Format, va_list Arguments) {
+        REQUIRE(Format != NULL, EINVAL);
+
+        // TODO: Replace this with the global allocator.
+        char Destination[0x200] = { 0 };
+        
+        vsprintf(Destination, Format, Arguments);
+        puts(Destination);
+}
+
+/**
+ * @brief Prints a formatted string using the journaling dispatch callbacks and
+ * variadic arguments.
+ *
+ * @param Format Formatting string to be used as a template.
+ */
+void printf(const char* restrict Format, ...) {
+        va_list Arguments;
+        va_start(Arguments, Format);
+
+        vprintf(Format, Arguments); 
+
+        va_end(Arguments);
+}
+
+#endif

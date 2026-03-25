@@ -17,7 +17,7 @@
 
 #include <copper.h>
 
-#ifndef CONFIG_PROVIDE_STANDARD
+#if !defined(CONFIG_PROVIDE_STANDARD)
         #include <stdio.h>
         #include <stdlib.h>
 #endif
@@ -40,7 +40,6 @@
  *       but invoked by Copper's internal assertion mechanism (`REQUIRE`/`ASSERT`).
  */
 void __used __exit panic(PANIC_INFORMATION __attribute__((unused)) Information) {
-#ifndef CONFIG_PROVIDE_STANDARD
         printf(
           "%18s:%03d | Expected '%s' to be true. Failed with excuse: %s (%s)\n",
           Information.File,
@@ -49,6 +48,7 @@ void __used __exit panic(PANIC_INFORMATION __attribute__((unused)) Information) 
           Get_Status_Description(Information.Status),
           Information.Excuse);
 
+#if !defined(CONFIG_PROVIDE_STANDARD)
         exit(Information.Status);
 #endif
         for (;;) {}
@@ -59,7 +59,13 @@ int main(void) {
         Sephamore_Aquire(&Lock);
         Sephamore_Release(&Lock);
 
+#if !defined(CONFIG_PROVIDE_STANDARD)
         void* Allocator_Region = malloc(CONFIG_ALLOCATOR_ARENA_SIZE * 64);
+#else
+        char Backing_Region[0x200];
+        void* Allocator_Region = Backing_Region;
+#endif
+
 
         ARENA_ALLOCATOR Botched_Global_Allocator = {
                 .Lock    = { 0 },
@@ -77,13 +83,11 @@ int main(void) {
 
         Global_Allocator_Register(&Test_Global_Allocator);
 
-        for (int i = 0; i < 5; i++) { 
+        for (int i = 0; i < 5; i++) {
                 void* Allocated = Global_Allocator_Allocate(0x1000);
                 printf("Allocation.%d : %p\n", i, Allocated);
         }
 
-        Journal_Register(puts);
-        Journal_Register(puts);
         Journal_Register(puts);
         Journal_Dispatch("Hello");
 
